@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-const { v4: uuidv4, validate } = require("uuid");
+const { v4: uuidv4, validate, v4 } = require("uuid");
 
 const app = express();
 app.use(express.json());
@@ -34,20 +34,26 @@ function checksCreateTodosUserAvailability(request, response, next) {
 function checksTodoExists(request, response, next) {
   const { username } = request.headers;
   const { id } = request.params;
+
   const user = users.find((user) => user.username === username);
-  const todo = todo.filter(function (todo) {
-    return todo.id == id;
-  });
-  const validateId = validate(id);
-  if (!validateId) {
-    return response.status(400).json();
-  } else if (!user) {
-    return response.status(404).json();
-  } else if (!todo) {
-    return response.status(404).json();
+
+  if (!user) {
+    return response.status(404).json({ error: "User not found." });
   }
-  request.user = user;
+
+  if (!validate(id)) {
+    return response.status(400).json({ error: "ToDo not found." });
+  }
+
+  const todo = user.todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    return response.status(404).json({ error: "ToDo not found." });
+  }
+
   request.todo = todo;
+  request.user = user;
+
   return next();
 }
 
